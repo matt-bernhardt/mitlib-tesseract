@@ -2,6 +2,8 @@ name: Build assets
 on:
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main, engx-117-github-actions ]
 jobs:
   build_assets:
     runs-on: ubuntu-latest
