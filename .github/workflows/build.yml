@@ -45,27 +45,42 @@ jobs:
         run: ls -lR ./css/build/
       - name: DEBUG confirm JS build output
         run: ls -lR ./js/build/
+      - name: Store build result as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact
+          path: |
+            css
+            !css/**/*.scss
+            fonts
+            images
+            inc
+            js
+            languages
+            lib
+            libs
+            composer.json
+            *.css
+            *.php
+            *.png
+            *.html
 
-      - name: Create swap directory # Ideally this is part of a separate workflow, but I do not want to repeat the build.
-                                                  # 3.  For interim releases, we need to transfer the assets over to
-                                                  #     the dev-release branch. So we copy those assets to a swap
-                                                  #     directory, check out, and then copy them back.
-        run: mkdir -vp /tmp/swap
-      - name: Copy file to swap directory
-        run: cp -R . /tmp/swap
-      - name: DEBUG Confirm state of swap directory
-        run: ls -lR /tmp/swap
-      - name: Checkout dev-release branch
+  development_release:
+    needs: build_assets                           # This takes the build output from build_assets, commits it on a
+                                                  # separate `tesseract` branch, and tags that as a pre-release (which
+                                                  # should be enough for the result to be picked up by Composer).
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
         uses: actions/checkout@v2
         with:
-          ref: dev-release
-          fetch-depth: 0                          # TODO - do we need this fetch-depth parameter?
-      - name: DEBUG Confirm our place in git tree (have we checked out what we expect?)
+          ref: tesseract
+      - name: DEBUG confirm our place in git tree
         run: git log --oneline --decorate --graph --all
-      - name: Copy files from swap directory
-        run: rsync -rlDz --delete --exclude '.git' /tmp/swap/ .
-                                                  # I _think_ things are working okay throught this step, but everything
-                                                  # after this is a bit suspect.
+      - name: Retrieve build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: build-artifact
       - name: Stage changed files for commit
         run: |
           git config --local user.email 'action@github.com'
@@ -81,36 +96,6 @@ jobs:
       - name: Commit changes                      # TODO - could we get a better commit message?
         run: |
           git commit -m 'Updates theme including compiled assets'
-      - name: Experimental release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Exp release ${{ github.ref }}
-          body: |
-            This is an experimental draft release. Where does it appear?
-          draft: true
-          prerelease: true
-      - name: DEBUG Confirm our place in git tree (compare to previous git tree output)
-        run: git log --oneline --decorate --graph --all
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: dev-release
-
-  development_release:
-    needs: build_assets # This generates the pre-release release of the theme.
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: dev-release
-      - name: DEBUG confirm our place in git tree
-        run: git log --oneline --decorate --graph --all
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -123,3 +108,10 @@ jobs:
             This release created automatically. Please edit this text to something meaningful.
           draft: false
           prerelease: true
+      - name: DEBUG Confirm our place in git tree (compare to previous git tree output)
+        run: git log --oneline --decorate --graph --all
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: tesseract
