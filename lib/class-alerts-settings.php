@@ -72,7 +72,7 @@ class Settings {
 			'value' => esc_attr( get_option( 'source' ) ),
 			'id' => 'source',
 		);
-		echo wp_kses( vsprintf( $template, $values ) );
+		echo wp_kses( vsprintf( $template, $values ), $allowed_html );
 	}
 
 }

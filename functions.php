@@ -193,6 +193,7 @@ function twentytwelve_scripts_styles() {
 		wp_localize_script( 'productionJS', 'mitlib', array(
 			'themeUrl' => get_template_directory_uri(),
 		));
+		wp_add_inline_script( 'productionJS', 'const ALERT_URL = "' . esc_js( get_option( 'source' ) ) . '";', 'before' );
 	}
 
 	if ( is_front_page() && ! is_child_theme() ) {
