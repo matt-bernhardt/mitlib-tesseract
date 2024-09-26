@@ -41,10 +41,8 @@ module.exports = function(grunt) {
   // The default task performs all three phases.
   grunt.registerTask('default', ['javascript', 'styles', 'release']);
 
-  // Code analysis is handled via PHP_CodeSniffer
-  grunt.registerTask('analyze', ['phpcs']);
-
-  // Moved to the tasks folder:
-  // grunt.registerTask('dev', ['connect', 'watch']);
-
+  // For local development, there is a slightly separate workflow, because
+  // Sass gets built directly in Grunt (the GH actions workflow handles this
+  // using a separate taskrunner)
+  grunt.registerTask('build-local', ['javascript', 'sass', 'styles', 'release']);
 };
